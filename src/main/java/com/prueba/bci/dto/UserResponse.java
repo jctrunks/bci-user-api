@@ -1,5 +1,7 @@
 package com.prueba.bci.dto;
 
+import jakarta.validation.constraints.Digits;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -88,8 +90,11 @@ public class UserResponse {
     }
 
     public static class PhoneResponse {
+        @Digits(integer = 8, fraction = 0)
         private int number;
+        @Digits(integer = 3, fraction = 0)
         private int citycode;
+        @Digits(integer = 3, fraction = 0)
         private int countrycode;
 
         public int getNumber() {

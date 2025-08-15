@@ -51,7 +51,7 @@ class UserControllerTest {
     void register_shouldCreateUser() throws Exception {
         // Arrange
         UserResponse.PhoneResponse phone = new UserResponse.PhoneResponse();
-        phone.setNumber(1234567);
+        phone.setNumber(12345678);
         phone.setCitycode(1);
         phone.setCountrycode(57);
 
@@ -74,7 +74,7 @@ class UserControllerTest {
                         "\"name\": \"Juan Rodriguez\"," +
                         "\"email\": \"juan@rodriguez.org\"," +
                         "\"password\": \"Hunter22\"," +
-                        "\"phones\": [{\"number\":1234567,\"citycode\":1,\"countrycode\":57}]" +
+                        "\"phones\": [{\"number\":12345678,\"citycode\":1,\"countrycode\":57}]" +
                         "}";
 
         // Act + Assert
@@ -90,9 +90,9 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.token", is("stub-jwt-token")))
                 .andExpect(jsonPath("$.isactive", is(true)))
                 .andExpect(jsonPath("$.phones", hasSize(1)))
-                .andExpect(jsonPath("$.phones[0].number", is("1234567")))
-                .andExpect(jsonPath("$.phones[0].citycode", is("1")))
-                .andExpect(jsonPath("$.phones[0].countrycode", is("57")));
+                .andExpect(jsonPath("$.phones[0].number", is(12345678)))
+                .andExpect(jsonPath("$.phones[0].citycode", is(1)))
+                .andExpect(jsonPath("$.phones[0].countrycode", is(57)));
     }
 
     @Test
@@ -100,7 +100,7 @@ class UserControllerTest {
     void getAllUsers_shouldReturnList() throws Exception {
         // Arrange
         UserResponse.PhoneResponse phone = new UserResponse.PhoneResponse();
-        phone.setNumber(7654321);
+        phone.setNumber(76543213);
         phone.setCitycode(2);
         phone.setCountrycode(56);
 

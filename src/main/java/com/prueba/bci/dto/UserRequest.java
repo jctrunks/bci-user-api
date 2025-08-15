@@ -5,12 +5,15 @@ import java.util.List;
 
 public class UserRequest {
     @NotBlank
+    @Size(min = 2, max = 50, message = "Nombre debe contener al menos 2 caracteres y maximo 50")
     private String name;
 
     @NotBlank
+    @Size(min = 5, max = 50, message = "Email debe contener al menos 5 caracteres  y maximo 50")
     private String email;
 
     @NotBlank
+    @Size(min = 8, max = 50, message = "Password debe contener al menos 8 caracteres y maximo 50")
     private String password;
 
     @NotNull
@@ -50,8 +53,16 @@ public class UserRequest {
     }
 
     public static class PhoneRequest {
+
+        @Digits(integer = 8, fraction = 0, message = "numero debe contener 8 digitos")
         private int number;
+
+        @Min(value = 1)
+        @Max(value = 999)
         private int citycode;
+
+        @Min(value = 1)
+        @Max(value = 999)
         private int countrycode;
 
         public int getNumber() {

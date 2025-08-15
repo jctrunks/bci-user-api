@@ -29,7 +29,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserResponse> register(@Valid @RequestBody UserRequest request) {
         UserResponse response = userService.register(request);

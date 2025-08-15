@@ -1,6 +1,7 @@
 package com.prueba.bci.entity;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import java.util.*;
 

@@ -1,6 +1,7 @@
 package com.prueba.bci.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Digits;
 
 @Entity
 @Table(name = "phones")
@@ -10,10 +11,14 @@ public class Phone {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Digits(integer = 8, fraction = 0)
     private int number;
+
+    @Digits(integer = 3, fraction = 0)
     private int citycode;
 
     @Column(name = "countrycode")
+    @Digits(integer = 3, fraction = 0)
     private int countrycode;
 
     @ManyToOne(fetch = FetchType.LAZY)
