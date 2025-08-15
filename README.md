@@ -54,3 +54,6 @@ mvn test
 ## URL para acceso a Swagger
 - Documentación: `http://localhost:8080/docs`
 
+## Diagrama de secuencia y componentes en la ruta
+- `docs/sequence.png`
+- `docs/components.png`

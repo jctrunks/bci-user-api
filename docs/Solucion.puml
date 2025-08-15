@@ -1,0 +1,38 @@
+@startuml
+title BCI User API - Component Overview
+
+skinparam componentStyle rectangle
+skinparam rectangle {
+  BackgroundColor<<ext>> #f9f9f9
+  BorderColor<<ext>> #bbbbbb
+}
+skinparam databaseBackgroundColor #f6ffed
+skinparam databaseBorderColor #7fbf7f
+
+actor Client as client
+
+package "BCI User API (Spring Boot)" {
+  [UserController\n(REST API)\n- /api/users/register\n- /api/users/getAll] as Controller
+  [UserService\n(Business Logic)\n- registerUser()\n- getAllUsers()] as Service
+  [UserRepository\n(Spring Data JPA)\n- save()\n- findAll()\n- existsByEmail()] as Repo
+  [Validation\n(Email/Password Regex, Unique Email)] as Validation
+  [JWT Component\n(Token Generation/Validation)] as Jwt
+  [Exception Handler\n(Errors -> {\"mensaje\":\"...\"})] as ExHandler
+  [OpenAPI/Swagger\n(/docs)] as Swagger <<ext>>
+
+  database "Relational DB\n(Users, Phones)" as DB
+
+  Controller --> Service : DTOs
+  Service --> Validation : validate(email, password)
+  Service --> Repo : save(user), existsByEmail(email), findAll()
+  Service --> Jwt : generateToken(userId)
+  Controller --> ExHandler : throws/handles exceptions
+  Controller --> Swagger : OpenAPI docs
+  Repo --> DB : JPA/Hibernate
+
+}
+
+client --> Controller : HTTP\nJSON
+Controller --> client : HTTP\nJSON (201/4xx)
+
+@enduml

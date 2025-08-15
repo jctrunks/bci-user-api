@@ -1,0 +1,40 @@
+@startuml
+title Sequence - Register User (POST /api/users/register)
+
+actor Client
+participant "UserController" as C
+participant "UserService" as S
+participant "Validation" as V
+participant "UserRepository" as R
+participant "JWT Component" as J
+database "DB" as DB
+
+Client -> C: POST /api/users/register\n{name, email, password, phones[]}
+C -> S: registerUser(requestDto)
+
+S -> R: existsByEmail(email)
+R -> DB: SELECT 1 FROM users WHERE email=?
+DB --> R: result
+R --> S: exists? (true/false)
+
+alt Email already exists
+  S -> C: throws Conflict\n{"mensaje":"Email ya registrado"}
+else New email
+  S -> V: validate(emailRegex, passwordRegex)
+  V --> S: ok or error
+  alt Validation error
+    S -> C: throws Bad Request\n{"mensaje":"Detalle de validación"}
+  else Valid data
+    S -> J: generateToken(userId or email)
+    J --> S: jwtToken
+
+    S -> R: save(user{name, email, passwordHash, phones, token...})
+    R -> DB: INSERT users, phones
+    DB --> R: persisted user
+    R --> S: userEntity
+
+    S --> C: userResponseDto\n(id, created, modified, last_login, token, isactive, phones)
+    C --> Client: 201 Created + JSON
+  end
+end
+@enduml
