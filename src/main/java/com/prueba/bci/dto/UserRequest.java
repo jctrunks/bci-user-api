@@ -2,21 +2,24 @@ package com.prueba.bci.dto;
 
 import jakarta.validation.constraints.*;
 import java.util.List;
+import jakarta.validation.Valid;
 
 public class UserRequest {
-    @NotBlank
+    @NotBlank(message = "El nombre es obligatorio")
     @Size(min = 2, max = 50, message = "Nombre debe contener al menos 2 caracteres y maximo 50")
     private String name;
 
-    @NotBlank
+    @NotBlank(message = "El email es obligatorio")
     @Size(min = 5, max = 50, message = "Email debe contener al menos 5 caracteres  y maximo 50")
     private String email;
 
-    @NotBlank
-    @Size(min = 8, max = 50, message = "Password debe contener al menos 8 caracteres y maximo 50")
+    @NotBlank(message = "El password es obligatorio")
+    @Size(min = 8, max = 50, message = "Password debe contener al menos 8 caracteres y maximo 50, al menos una mayuscula, una minuscula y un número")
     private String password;
 
-    @NotNull
+    @NotNull(message = "La lista de teléfonos es obligatoria")
+    @Size(min = 1, message = "Debe incluir al menos un teléfono")
+    @Valid
     private List<PhoneRequest> phones;
 
     // getters and setters
@@ -54,38 +57,41 @@ public class UserRequest {
 
     public static class PhoneRequest {
 
-        @Digits(integer = 8, fraction = 0, message = "numero debe contener 8 digitos")
-        private int number;
+        @NotNull(message = "número es obligatorio")
+        @Digits(integer = 8, fraction = 0, message = "número debe ser de 8 digitos")
+        private Integer number;
 
-        @Min(value = 1)
-        @Max(value = 999)
-        private int citycode;
+        @NotNull(message = "citycode es obligatorio")
+        @Min(value = 1, message = "citycode debe ser mayor o igual a 1")
+        @Max(value = 999, message = "citycode debe ser menor o igual a 999")
+        private Integer citycode;
 
-        @Min(value = 1)
-        @Max(value = 999)
-        private int countrycode;
+        @NotNull(message = "countrycode es obligatorio")
+        @Min(value = 1, message = "countrycode debe ser mayor o igual a 1")
+        @Max(value = 999, message = "countrycode debe ser menor o igual a 999")
+        private Integer countrycode;
 
-        public int getNumber() {
+        public Integer getNumber() {
             return number;
         }
 
-        public void setNumber(int number) {
+        public void setNumber(Integer number) {
             this.number = number;
         }
 
-        public int getCitycode() {
+        public Integer getCitycode() {
             return citycode;
         }
 
-        public void setCitycode(int citycode) {
+        public void setCitycode(Integer citycode) {
             this.citycode = citycode;
         }
 
-        public int getCountrycode() {
+        public Integer getCountrycode() {
             return countrycode;
         }
 
-        public void setCountrycode(int countrycode) {
+        public void setCountrycode(Integer countrycode) {
             this.countrycode = countrycode;
         }
     }

@@ -2,6 +2,7 @@ package com.prueba.bci.service;
 
 import com.prueba.bci.dto.UserRequest;
 import com.prueba.bci.dto.UserResponse;
+import com.prueba.bci.dto.UserResponseNew;
 import com.prueba.bci.entity.Phone;
 import com.prueba.bci.entity.User;
 import com.prueba.bci.exception.EmailAlreadyExistsException;
@@ -47,10 +48,10 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
+    public List<UserResponseNew> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
-                .map(this::toResponse)
+                .map(this::toResponseNew)
                 .collect(Collectors.toList());
     }
 
@@ -58,7 +59,7 @@ public class UserService {
     @Transactional
     public UserResponse register(UserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException("El correo ya registrado");
+            throw new EmailAlreadyExistsException("El correo ya está registrado");
         }
         if (!request.getEmail().matches(emailRegex)) {
             throw new IllegalArgumentException("Correo con formato inválido");
@@ -102,6 +103,17 @@ public class UserService {
     private UserResponse toResponse(User user) {
         UserResponse resp = new UserResponse();
         resp.setId(user.getId());
+        resp.setCreated(user.getCreated());
+        resp.setModified(user.getModified());
+        resp.setLast_login(user.getLastLogin());
+        resp.setToken(user.getToken());
+        resp.setIsactive(user.isIsactive());
+        return resp;
+    }
+
+    private UserResponseNew toResponseNew(User user) {
+        UserResponseNew resp = new UserResponseNew();
+        resp.setId(user.getId());
         resp.setName(user.getName());
         resp.setEmail(user.getEmail());
         resp.setCreated(user.getCreated());
@@ -109,8 +121,8 @@ public class UserService {
         resp.setLast_login(user.getLastLogin());
         resp.setToken(user.getToken());
         resp.setIsactive(user.isIsactive());
-        List<UserResponse.PhoneResponse> phones = user.getPhones().stream().map(ph -> {
-            UserResponse.PhoneResponse pr = new UserResponse.PhoneResponse();
+        List<UserResponseNew.PhoneResponse> phones = user.getPhones().stream().map(ph -> {
+            UserResponseNew.PhoneResponse pr = new UserResponseNew.PhoneResponse();
             pr.setNumber(ph.getNumber());
             pr.setCitycode(ph.getCitycode());
             pr.setCountrycode(ph.getCountrycode());
@@ -119,4 +131,5 @@ public class UserService {
         resp.setPhones(phones);
         return resp;
     }
+
 }

@@ -1,16 +1,21 @@
 package com.prueba.bci.controller;
 
 import com.prueba.bci.dto.UserResponse;
+import com.prueba.bci.dto.UserResponseNew;
+import com.prueba.bci.exception.EmailAlreadyExistsException;
 import com.prueba.bci.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,15 +28,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+// ... existing code ...
+import com.prueba.bci.exception.GlobalExceptionHandler;
+
 @AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(UserController.class)
+@Import(GlobalExceptionHandler.class)
 class UserControllerTest {
 
     @TestConfiguration
     static class MockConfig {
         @Bean
         UserService userService() {
-            // Provide a Mockito mock as a bean instead of using @MockBean (deprecated in Boot 3.4+)
             return Mockito.mock(UserService.class);
         }
     }
@@ -42,29 +50,24 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // This will be the Mockito mock defined in MockConfig
     @Autowired
     private UserService userService;
+
+    @BeforeEach
+    void resetMock() {
+        Mockito.reset(userService);
+    }
 
     @Test
     @DisplayName("POST /api/users/register - should create and return user")
     void register_shouldCreateUser() throws Exception {
-        // Arrange
-        UserResponse.PhoneResponse phone = new UserResponse.PhoneResponse();
-        phone.setNumber(12345678);
-        phone.setCitycode(1);
-        phone.setCountrycode(57);
-
         UserResponse stubResponse = new UserResponse();
         stubResponse.setId("abc-123");
-        stubResponse.setName("Juan Rodriguez");
-        stubResponse.setEmail("juan@rodriguez.org");
         stubResponse.setCreated(LocalDateTime.now());
         stubResponse.setModified(LocalDateTime.now());
         stubResponse.setLast_login(LocalDateTime.now());
         stubResponse.setToken("stub-jwt-token");
         stubResponse.setIsactive(true);
-        stubResponse.setPhones(List.of(phone));
 
         Mockito.when(userService.register(any()))
                 .thenReturn(stubResponse);
@@ -85,26 +88,21 @@ class UserControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is("abc-123")))
-                .andExpect(jsonPath("$.name", is("Juan Rodriguez")))
-                .andExpect(jsonPath("$.email", is("juan@rodriguez.org")))
                 .andExpect(jsonPath("$.token", is("stub-jwt-token")))
                 .andExpect(jsonPath("$.isactive", is(true)))
-                .andExpect(jsonPath("$.phones", hasSize(1)))
-                .andExpect(jsonPath("$.phones[0].number", is(12345678)))
-                .andExpect(jsonPath("$.phones[0].citycode", is(1)))
-                .andExpect(jsonPath("$.phones[0].countrycode", is(57)));
+                ;
     }
 
     @Test
-    @DisplayName("GET /api/users/getAll - should return list of users")
+    @DisplayName("GET /api/users/getAll - Debe retornar una lista de usuarios")
     void getAllUsers_shouldReturnList() throws Exception {
-        // Arrange
-        UserResponse.PhoneResponse phone = new UserResponse.PhoneResponse();
+
+        UserResponseNew.PhoneResponse phone = new UserResponseNew.PhoneResponse();
         phone.setNumber(76543213);
         phone.setCitycode(2);
         phone.setCountrycode(56);
 
-        UserResponse u1 = new UserResponse();
+        UserResponseNew u1 = new UserResponseNew();
         u1.setId("id-1");
         u1.setName("Alice");
         u1.setEmail("alice@example.com");
@@ -115,7 +113,7 @@ class UserControllerTest {
         u1.setIsactive(true);
         u1.setPhones(List.of(phone));
 
-        UserResponse u2 = new UserResponse();
+        UserResponseNew u2 = new UserResponseNew();
         u2.setId("id-2");
         u2.setName("Bob");
         u2.setEmail("bob@example.com");
@@ -129,7 +127,6 @@ class UserControllerTest {
         Mockito.when(userService.getAllUsers())
                 .thenReturn(List.of(u1, u2));
 
-        // Act + Assert
         mockMvc.perform(get("/api/users/getAll")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -145,5 +142,159 @@ class UserControllerTest {
                 .andExpect(jsonPath("$[1].email", is("bob@example.com")))
                 .andExpect(jsonPath("$[1].isactive", is(false)))
                 .andExpect(jsonPath("$[1].phones", hasSize(0)));
+    }
+
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 Cuando el nombre está vacio")
+    void register_shouldReturn400_whenNameBlank() throws Exception {
+        String payload = "{" +
+                "\"name\": \" \"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"Hunter22\"," +
+                "\"phones\": [{\"number\":12345678,\"citycode\":1,\"countrycode\":57}]" +
+                "}";
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Nombre")));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 Cuando falta campo numero de teléfono")
+    void register_shouldReturn400_whenPhonesMissing() throws Exception {
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"Hunter22\"" +
+                "}";
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("teléfonos")));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 cuando el campo teléfono está vacío")
+    void register_shouldReturn400_whenPhonesEmpty() throws Exception {
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"Hunter22\"," +
+                "\"phones\": []" +
+                "}";
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("al menos un teléfono")));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 cuando el numero de teléfono es nulo")
+    void register_shouldReturn400_whenPhoneNumberNull() throws Exception {
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"Hunter22\"," +
+                "\"phones\": [{\"number\":null,\"citycode\":1,\"countrycode\":57}]" +
+                "}";
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", anyOf(containsString("número es obligatorio"),
+                                                       containsString("número debe ser de 8 digitos"))));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 cuando citycode está fuera de rango")
+    void register_shouldReturn400_whenCitycodeOutOfRange() throws Exception {
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"Hunter22\"," +
+                "\"phones\": [{\"number\":12345678,\"citycode\":0,\"countrycode\":57}]" +
+                "}";
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("citycode")));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 JSON mal formado / typos erroneos")
+    void register_shouldReturn400_onMalformedJson() throws Exception {
+        String payload = "{\"name\":\"Juan\",\"email\":\"juan@rodriguez.org\",\"password\":\"Hunter22\",\"phones\":[{\"number\":\"abc\",\"citycode\":1,\"countrycode\":57}]";
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", anyOf(containsString("Cuerpo de la solicitud inválido"),
+                                                       containsString("tipos de datos incorrectos"),
+                                                       notNullValue())));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 cuando regex de email es invalido")
+    void register_shouldReturn400_whenEmailRegexInvalid() throws Exception {
+        Mockito.when(userService.register(ArgumentMatchers.any()))
+                .thenThrow(new IllegalArgumentException("Correo con formato inválido"));
+
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez\"," +
+                "\"password\": \"Hunter22\"," +
+                "\"phones\": [{\"number\":12345678,\"citycode\":1,\"countrycode\":57}]" +
+                "}";
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", is("Correo con formato inválido")));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 rcuando regex de password es invalido")
+    void register_shouldReturn400_whenPasswordRegexInvalid() throws Exception {
+        Mockito.when(userService.register(ArgumentMatchers.any()))
+                .thenThrow(new IllegalArgumentException("Contraseña con formato inválido"));
+
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"shortttt\"," +
+                "\"phones\": [{\"number\":12345678,\"citycode\":1,\"countrycode\":57}]" +
+                "}";
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", is("Contraseña con formato inválido")));
+    }
+
+    @Test
+    @DisplayName("POST /api/users/register - 400 cuando el correo ya existe")
+    void register_shouldReturn400_whenEmailAlreadyExists() throws Exception {
+        Mockito.when(userService.register(ArgumentMatchers.any()))
+                .thenThrow(new EmailAlreadyExistsException("El correo ya está registrado"));
+
+        String payload = "{" +
+                "\"name\": \"Juan Rodriguez\"," +
+                "\"email\": \"juan@rodriguez.org\"," +
+                "\"password\": \"Hunter22\"," +
+                "\"phones\": [{\"number\":12345678,\"citycode\":1,\"countrycode\":57}]" +
+                "}";
+
+        mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", is("El correo ya está registrado")));
     }
 }

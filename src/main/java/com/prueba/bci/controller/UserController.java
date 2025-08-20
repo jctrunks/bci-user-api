@@ -2,6 +2,7 @@ package com.prueba.bci.controller;
 
 import com.prueba.bci.dto.UserRequest;
 import com.prueba.bci.dto.UserResponse;
+import com.prueba.bci.dto.UserResponseNew;
 import com.prueba.bci.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,7 +26,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/getAll")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+    public ResponseEntity<List<UserResponseNew>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
